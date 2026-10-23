@@ -1,5 +1,7 @@
 # Scalable disk monitoring for multi-account AWS (Ansible-first)
 
+The assignment brief is in [docs/ASSIGNMENT.md](docs/ASSIGNMENT.md).
+
 This solution monitors disk utilisation on every EC2 VM across all AWS accounts in an organisation, including accounts that came in through acquisitions. It warns early when disks are filling up, so they can be dealt with before they cause downtime.
 
 **Cloud chosen: AWS.** The company already runs Ansible, so Ansible is the backbone. It handles access, discovery, enrollment, collection and reporting. Cloud-native services are added only where they clearly help:
