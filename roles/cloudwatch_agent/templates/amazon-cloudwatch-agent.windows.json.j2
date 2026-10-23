@@ -1,0 +1,17 @@
+{
+  "agent": {
+    "metrics_collection_interval": {{ cwagent_metrics_interval }}
+  },
+  "metrics": {
+    "namespace": "{{ cwagent_namespace }}",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "LogicalDisk": {
+        "measurement": ["% Free Space"],
+        "resources": ["*"]
+      }
+    }
+  }
+}

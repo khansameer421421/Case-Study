@@ -1,0 +1,11 @@
+---
+profile: moderate
+exclude_paths:
+  - cloudformation/
+  - .github/
+  - .cache/
+  - collections/
+  - reports/
+skip_list:
+  # Shared vars (disk_*, report_*) are deliberately used by several roles.
+  - var-naming[no-role-prefix]

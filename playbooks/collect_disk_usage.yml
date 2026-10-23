@@ -1,0 +1,23 @@
+---
+# Ansible-native collection: pull disk usage from every VM over SSM,
+# aggregate on the controller, write JSON/CSV/HTML, optionally publish to S3
+# and alert through SNS. Works with zero CloudWatch cost; schedule it hourly.
+#
+#   ansible-playbook playbooks/collect_disk_usage.yml                    # all AWS VMs
+#   ansible-playbook playbooks/collect_disk_usage.yml -e target=account_222222222222
+#   ansible-playbook -i inventories/local playbooks/collect_disk_usage.yml   # local demo
+
+- name: Collect disk utilisation from VMs
+  hosts: "{{ target | default('all') }}"
+  gather_facts: false
+  roles:
+    - disk_collector
+
+- name: Aggregate, report and alert
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    disk_report_target: "{{ target | default('all') }}"
+  roles:
+    - disk_report

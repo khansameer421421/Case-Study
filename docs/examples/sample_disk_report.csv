@@ -1,0 +1,12 @@
+account_id,account_name,region,host,name,mount,fstype,size_gb,avail_gb,used_pct,inode_used_pct,status,collect_status,collected_at
+222222222222,acquired-co-a-prod,us-east-1,i-0a1b2c3d4e5f60001,"web-01",/,xfs,20.0,1.72,91.4,31.0,critical,ok,2026-10-23T09:00:00Z
+222222222222,acquired-co-a-prod,us-east-1,i-0a1b2c3d4e5f60001,"web-01",/boot/efi,vfat,0.01,0.01,13.0,0.0,ok,ok,2026-10-23T09:00:00Z
+222222222222,acquired-co-a-prod,us-east-1,i-0a1b2c3d4e5f60001,"web-01",/var/log,ext4,50.0,8.4,83.2,12.0,warning,ok,2026-10-23T09:00:00Z
+333333333333,acquired-co-b-prod,eu-central-1,i-0a1b2c3d4e5f60002,"db-01",/,ext4,30.0,17.49,41.7,22.0,ok,ok,2026-10-23T09:00:00Z
+333333333333,acquired-co-b-prod,eu-central-1,i-0a1b2c3d4e5f60002,"db-01",/data,xfs,500.0,180.0,64.0,3.0,ok,ok,2026-10-23T09:00:00Z
+333333333333,acquired-co-b-prod,eu-central-1,i-0a1b2c3d4e5f60002,"db-01",/var/spool/mail,ext4,10.0,6.15,38.5,93.1,critical,ok,2026-10-23T09:00:00Z
+444444444444,corp-shared-services,us-west-2,i-0a1b2c3d4e5f60004,"batch-02",/,xfs,40.0,18.0,55.0,8.0,ok,ok,2026-10-23T09:00:00Z
+222222222222,acquired-co-a-prod,us-east-1,i-0a1b2c3d4e5f60003,"app-win-01",C:,NTFS,128.0,35.84,72.0,0.0,ok,ok,2026-10-23T09:00:00Z
+222222222222,acquired-co-a-prod,us-east-1,i-0a1b2c3d4e5f60003,"app-win-01",D:,NTFS,256.0,30.72,88.0,0.0,warning,ok,2026-10-23T09:00:00Z
+333333333333,acquired-co-b-prod,eu-central-1,i-0a1b2c3d4e5f60009,"legacy-ftp",,,,,,,unknown,unreachable,2026-10-23T09:00:00Z
+444444444444,corp-shared-services,us-west-2,i-0a1b2c3d4e5f60010,"i-0a1b2c3d4e5f60010",,,,,,,unknown,unreachable,

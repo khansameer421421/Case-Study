@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Disk monitoring - CloudWatch cross-account observability sink in the
+  monitoring account. OAM links are regional, so deploy this once per
+  monitored region (scripts/deploy.sh loops over them).
+
+Parameters:
+  OrganizationId:
+    Type: String
+    AllowedPattern: "^o-[a-z0-9]{10,32}$"
+
+Resources:
+  MetricsSink:
+    Type: AWS::Oam::Sink
+    Properties:
+      Name: disk-monitoring-sink
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action:
+              - oam:CreateLink
+              - oam:UpdateLink
+            Resource: "*"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrganizationId
+              # Share metrics only - no logs or traces leave member accounts.
+              ForAllValues:StringEquals:
+                oam:ResourceTypes:
+                  - AWS::CloudWatch::Metric
+
+Outputs:
+  SinkArn:
+    Value: !GetAtt MetricsSink.Arn

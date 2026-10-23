@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disk Utilisation Report</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #5d6677; --line: #e3e6eb;
+    --ok: #2e7d4f; --warn: #b26a00; --crit: #c62828; --gap: #6b5fb5; --bar: #dde2e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1b1f27; --text: #e7eaf0; --muted: #9aa3b2; --line: #2b313c;
+      --ok: #5fbf86; --warn: #f0a83c; --crit: #ff6b6b; --gap: #a99cf0; --bar: #2b313c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 32px 0 10px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .tile .v { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .tile.crit .v { color: var(--crit); } .tile.warn .v { color: var(--warn); } .tile.gap .v { color: var(--gap); }
+  .wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.ok { color: var(--ok); border: 1px solid var(--ok); }
+  .pill.warning { color: var(--warn); border: 1px solid var(--warn); }
+  .pill.critical { color: var(--crit); border: 1px solid var(--crit); }
+  .pill.unknown, .pill.unreachable, .pill.error { color: var(--gap); border: 1px solid var(--gap); }
+  .bar { position: relative; width: 140px; height: 8px; background: var(--bar); border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--ok); }
+  .bar i.warning { background: var(--warn); } .bar i.critical { background: var(--crit); }
+  .muted { color: var(--muted); }
+  .empty { padding: 16px; color: var(--muted); }
+  footer { margin-top: 32px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Disk utilisation</h1>
+  <p class="sub">Generated 2026-10-23 09:00:00 UTC &middot; warning &ge; 80% &middot; critical &ge; 90% (space or inodes)</p>
+
+  <section class="tiles">
+    <div class="tile"><div class="v">4/6</div><div class="k">Hosts reporting</div></div>
+    <div class="tile"><div class="v">3</div><div class="k">Accounts</div></div>
+    <div class="tile"><div class="v">9</div><div class="k">Filesystems</div></div>
+    <div class="tile crit"><div class="v">2</div><div class="k">Critical</div></div>
+    <div class="tile warn"><div class="v">2</div><div class="k">Warning</div></div>
+    <div class="tile gap"><div class="v">2</div><div class="k">Not reporting</div></div>
+  </section>
+
+  <h2>Needs attention</h2>
+  <div class="wrap">
+      <table>
+      <thead><tr><th>Status</th><th>Used</th><th class="num">Free GB</th><th class="num">Inodes</th><th>Mount</th><th>Host</th><th>Account</th><th>Region</th></tr></thead>
+      <tbody>
+              <tr>
+          <td><span class="pill critical">critical</span></td>
+          <td><span class="bar"><i class="critical" style="width: 91.4%"></i></span>91.4%</td>
+          <td class="num">1.72</td>
+          <td class="num">31.0%</td>
+          <td>/</td>
+          <td>web-01 <span class="muted">i-0a1b2c3d4e5f60001</span></td>
+          <td>acquired-co-a-prod <span class="muted">222222222222</span></td>
+          <td>us-east-1</td>
+        </tr>
+              <tr>
+          <td><span class="pill critical">critical</span></td>
+          <td><span class="bar"><i class="critical" style="width: 38.5%"></i></span>38.5%</td>
+          <td class="num">6.15</td>
+          <td class="num">93.1%</td>
+          <td>/var/spool/mail</td>
+          <td>db-01 <span class="muted">i-0a1b2c3d4e5f60002</span></td>
+          <td>acquired-co-b-prod <span class="muted">333333333333</span></td>
+          <td>eu-central-1</td>
+        </tr>
+              <tr>
+          <td><span class="pill warning">warning</span></td>
+          <td><span class="bar"><i class="warning" style="width: 88.0%"></i></span>88.0%</td>
+          <td class="num">30.72</td>
+          <td class="num">0.0%</td>
+          <td>D:</td>
+          <td>app-win-01 <span class="muted">i-0a1b2c3d4e5f60003</span></td>
+          <td>acquired-co-a-prod <span class="muted">222222222222</span></td>
+          <td>us-east-1</td>
+        </tr>
+              <tr>
+          <td><span class="pill warning">warning</span></td>
+          <td><span class="bar"><i class="warning" style="width: 83.2%"></i></span>83.2%</td>
+          <td class="num">8.4</td>
+          <td class="num">12.0%</td>
+          <td>/var/log</td>
+          <td>web-01 <span class="muted">i-0a1b2c3d4e5f60001</span></td>
+          <td>acquired-co-a-prod <span class="muted">222222222222</span></td>
+          <td>us-east-1</td>
+        </tr>
+            </tbody>
+    </table>
+    </div>
+
+  <h2>Coverage gaps</h2>
+  <div class="wrap">
+      <table>
+      <thead><tr><th>Status</th><th>Host</th><th>Account</th><th>Region</th><th>Reason</th></tr></thead>
+      <tbody>
+              <tr>
+          <td><span class="pill unreachable">unreachable</span></td>
+          <td>legacy-ftp <span class="muted">i-0a1b2c3d4e5f60009</span></td>
+          <td>acquired-co-b-prod <span class="muted">333333333333</span></td>
+          <td>eu-central-1</td>
+          <td class="muted">timed out waiting for ping module test: SSM session could not be started (TargetNotConnected)</td>
+        </tr>
+              <tr>
+          <td><span class="pill unreachable">unreachable</span></td>
+          <td>i-0a1b2c3d4e5f60010 <span class="muted">i-0a1b2c3d4e5f60010</span></td>
+          <td>corp-shared-services <span class="muted">444444444444</span></td>
+          <td>us-west-2</td>
+          <td class="muted">host dropped from play before collection</td>
+        </tr>
+            </tbody>
+    </table>
+    </div>
+
+  <h2>By account</h2>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Account</th><th class="num">Hosts</th><th class="num">Not reporting</th><th class="num">Critical FS</th><th class="num">Warning FS</th><th class="num">Fullest FS</th></tr></thead>
+      <tbody>
+                              <tr>
+          <td>acquired-co-a-prod <span class="muted">222222222222</span></td>
+          <td class="num">2</td>
+          <td class="num">0</td>
+          <td class="num">1</td>
+          <td class="num">2</td>
+          <td class="num">91.4%</td>
+        </tr>
+                              <tr>
+          <td>acquired-co-b-prod <span class="muted">333333333333</span></td>
+          <td class="num">2</td>
+          <td class="num">1</td>
+          <td class="num">1</td>
+          <td class="num">0</td>
+          <td class="num">64.0%</td>
+        </tr>
+                              <tr>
+          <td>corp-shared-services <span class="muted">444444444444</span></td>
+          <td class="num">2</td>
+          <td class="num">1</td>
+          <td class="num">0</td>
+          <td class="num">0</td>
+          <td class="num">55.0%</td>
+        </tr>
+            </tbody>
+    </table>
+  </div>
+
+  <h2>All filesystems</h2>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Host</th><th>Mount</th><th>Type</th><th class="num">Size GB</th><th class="num">Free GB</th><th>Used</th><th class="num">Inodes</th><th>Status</th></tr></thead>
+      <tbody>
+                      <tr>
+          <td>web-01 <span class="muted">acquired-co-a-prod / us-east-1 &middot; Amazon 2023</span></td>
+          <td>/</td>
+          <td class="muted">xfs</td>
+          <td class="num">20.0</td>
+          <td class="num">1.72</td>
+          <td><span class="bar"><i class="critical" style="width: 91.4%"></i></span>91.4%</td>
+          <td class="num">31.0%</td>
+          <td><span class="pill critical">critical</span></td>
+        </tr>
+                <tr>
+          <td></td>
+          <td>/boot/efi</td>
+          <td class="muted">vfat</td>
+          <td class="num">0.01</td>
+          <td class="num">0.01</td>
+          <td><span class="bar"><i class="ok" style="width: 13.0%"></i></span>13.0%</td>
+          <td class="num">0.0%</td>
+          <td><span class="pill ok">ok</span></td>
+        </tr>
+                <tr>
+          <td></td>
+          <td>/var/log</td>
+          <td class="muted">ext4</td>
+          <td class="num">50.0</td>
+          <td class="num">8.4</td>
+          <td><span class="bar"><i class="warning" style="width: 83.2%"></i></span>83.2%</td>
+          <td class="num">12.0%</td>
+          <td><span class="pill warning">warning</span></td>
+        </tr>
+                              <tr>
+          <td>db-01 <span class="muted">acquired-co-b-prod / eu-central-1 &middot; Ubuntu 24.04</span></td>
+          <td>/</td>
+          <td class="muted">ext4</td>
+          <td class="num">30.0</td>
+          <td class="num">17.49</td>
+          <td><span class="bar"><i class="ok" style="width: 41.7%"></i></span>41.7%</td>
+          <td class="num">22.0%</td>
+          <td><span class="pill ok">ok</span></td>
+        </tr>
+                <tr>
+          <td></td>
+          <td>/data</td>
+          <td class="muted">xfs</td>
+          <td class="num">500.0</td>
+          <td class="num">180.0</td>
+          <td><span class="bar"><i class="ok" style="width: 64.0%"></i></span>64.0%</td>
+          <td class="num">3.0%</td>
+          <td><span class="pill ok">ok</span></td>
+        </tr>
+                <tr>
+          <td></td>
+          <td>/var/spool/mail</td>
+          <td class="muted">ext4</td>
+          <td class="num">10.0</td>
+          <td class="num">6.15</td>
+          <td><span class="bar"><i class="critical" style="width: 38.5%"></i></span>38.5%</td>
+          <td class="num">93.1%</td>
+          <td><span class="pill critical">critical</span></td>
+        </tr>
+                              <tr>
+          <td>app-win-01 <span class="muted">acquired-co-a-prod / us-east-1 &middot; Microsoft Windows Server 2022 Datacenter</span></td>
+          <td>C:</td>
+          <td class="muted">NTFS</td>
+          <td class="num">128.0</td>
+          <td class="num">35.84</td>
+          <td><span class="bar"><i class="ok" style="width: 72.0%"></i></span>72.0%</td>
+          <td class="num">0.0%</td>
+          <td><span class="pill ok">ok</span></td>
+        </tr>
+                <tr>
+          <td></td>
+          <td>D:</td>
+          <td class="muted">NTFS</td>
+          <td class="num">256.0</td>
+          <td class="num">30.72</td>
+          <td><span class="bar"><i class="warning" style="width: 88.0%"></i></span>88.0%</td>
+          <td class="num">0.0%</td>
+          <td><span class="pill warning">warning</span></td>
+        </tr>
+                              <tr>
+          <td>batch-02 <span class="muted">corp-shared-services / us-west-2 &middot; RedHat 9.4</span></td>
+          <td>/</td>
+          <td class="muted">xfs</td>
+          <td class="num">40.0</td>
+          <td class="num">18.0</td>
+          <td><span class="bar"><i class="ok" style="width: 55.0%"></i></span>55.0%</td>
+          <td class="num">8.0%</td>
+          <td><span class="pill ok">ok</span></td>
+        </tr>
+                    </tbody>
+    </table>
+  </div>
+
+  <footer>Produced by playbooks/collect_disk_usage.yml. Machine-readable copies: disk_report.json, disk_report.csv.</footer>
+</main>
+</body>
+</html>

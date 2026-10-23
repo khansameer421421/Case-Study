@@ -1,0 +1,7 @@
+{{ {'generated_at': disk_report_generated,
+     'thresholds': {'disk_warning_pct': disk_warning_pct, 'disk_critical_pct': disk_critical_pct,
+                    'inode_warning_pct': inode_warning_pct, 'inode_critical_pct': inode_critical_pct},
+     'stats': disk_stats,
+     'findings': disk_findings,
+     'coverage_gaps': disk_gaps | map(attribute='host') | list,
+     'hosts': disk_fleet} | to_nice_json(indent=2) }}

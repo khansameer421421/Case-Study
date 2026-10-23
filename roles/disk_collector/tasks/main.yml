@@ -1,0 +1,49 @@
+---
+# Produces one fact per host, disk_host_summary, which the disk_report role
+# aggregates on the controller. Hosts that cannot be reached still get a
+# summary (collect_status=unreachable) so they show up as coverage gaps
+# instead of silently disappearing from the report.
+
+- name: Check the host is reachable over its connection (SSM for EC2)
+  ansible.builtin.wait_for_connection:
+    timeout: "{{ disk_connect_timeout }}"
+  register: disk_conn
+  ignore_errors: true
+
+- name: Record unreachable host as a coverage gap
+  ansible.builtin.set_fact:
+    disk_host_summary: "{{ disk_host_meta | combine({
+        'collect_status': 'unreachable',
+        'collect_error': disk_conn.msg | default('connection failed') | truncate(200),
+        'status': 'unknown', 'max_used_pct': none, 'filesystems': []}) }}"
+  when: disk_conn is failed
+
+- name: Stop here for unreachable hosts
+  ansible.builtin.meta: end_host
+  when: disk_conn is failed
+
+- name: Collect and evaluate filesystem usage
+  block:
+    - name: Collect filesystem usage (OS specific)
+      ansible.builtin.include_tasks: "{{ 'windows.yml' if (ansible_shell_type | default('sh')) == 'powershell' else 'linux.yml' }}"
+
+    - name: Summarise host
+      vars:
+        _statuses: "{{ disk_usage | map(attribute='status') | list }}"
+      ansible.builtin.set_fact:
+        disk_host_summary: "{{ disk_host_meta | combine({
+            'collect_status': 'ok',
+            'collect_error': '',
+            'os': disk_os,
+            'status': 'critical' if 'critical' in _statuses
+                      else ('warning' if 'warning' in _statuses else 'ok'),
+            'max_used_pct': disk_usage | map(attribute='used_pct') | max if disk_usage else 0,
+            'filesystems': disk_usage}) }}"
+
+  rescue:
+    - name: Record collection failure
+      ansible.builtin.set_fact:
+        disk_host_summary: "{{ disk_host_meta | combine({
+            'collect_status': 'error',
+            'collect_error': ansible_failed_result.msg | default('collection failed') | truncate(200),
+            'status': 'unknown', 'max_used_pct': none, 'filesystems': []}) }}"

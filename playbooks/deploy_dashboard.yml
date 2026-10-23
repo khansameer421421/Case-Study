@@ -1,0 +1,46 @@
+---
+# Build the central CloudWatch dashboard in the monitoring account. Metrics
+# from every member account arrive through CloudWatch cross-account
+# observability (OAM links are regional, so there is one widget per region).
+# The region list comes from config/accounts.yml, so new regions show up on
+# the next run without hand-editing JSON.
+
+- name: Deploy the central disk utilisation dashboard
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../config/accounts.yml
+  vars:
+    dashboard_name: DiskUtilisation
+    dashboard_regions: >-
+      {{ (default_regions + (account_overrides.values() | map(attribute='regions') | select('defined') | flatten))
+         | unique | sort }}
+  tasks:
+    - name: Ensure the cache directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../.cache"
+        state: directory
+        mode: "0755"
+
+    - name: Render dashboard body
+      ansible.builtin.template:
+        src: dashboard.json.j2
+        dest: "{{ playbook_dir }}/../.cache/dashboard.json"
+        mode: "0644"
+
+    - name: Publish dashboard
+      ansible.builtin.command:
+        argv:
+          - aws
+          - cloudwatch
+          - put-dashboard
+          - --region
+          - "{{ monitoring_region }}"
+          - --dashboard-name
+          - "{{ dashboard_name }}"
+          - --dashboard-body
+          - "file://{{ playbook_dir }}/../.cache/dashboard.json"
+      register: dashboard_put
+      changed_when: true
+      failed_when: dashboard_put.rc != 0 or (dashboard_put.stdout | from_json).DashboardValidationMessages | default([]) | length > 0

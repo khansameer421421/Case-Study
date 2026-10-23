@@ -1,0 +1,18 @@
+---
+cwagent_namespace: CWAgent
+cwagent_metrics_interval: 60
+cwagent_disk_measurements: [used_percent, inodes_free]
+disk_exclude_fstypes: [tmpfs, devtmpfs, overlay, squashfs, proc, sysfs]
+
+# Region-local download endpoint keeps traffic on the AWS backbone and works
+# through an S3 gateway endpoint in private subnets.
+cwagent_region: "{{ aws_region | default('us-east-1') }}"
+cwagent_download_base: "https://amazoncloudwatch-agent-{{ cwagent_region }}.s3.{{ cwagent_region }}.amazonaws.com"
+cwagent_gpg_key_url: https://amazoncloudwatch-agent.s3.amazonaws.com/assets/amazon-cloudwatch-agent.gpg
+
+cwagent_linux_home: /opt/aws/amazon-cloudwatch-agent
+cwagent_linux_config: "{{ cwagent_linux_home }}/etc/amazon-cloudwatch-agent.json"
+cwagent_linux_ctl: "{{ cwagent_linux_home }}/bin/amazon-cloudwatch-agent-ctl"
+
+cwagent_win_ctl: 'C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1'
+cwagent_win_config: 'C:\ProgramData\Amazon\AmazonCloudWatch\amazon-cloudwatch-agent.json'

@@ -1,0 +1,3 @@
+---
+account_discovery_inventory_dir: "{{ playbook_dir }}/../inventories/aws"
+account_discovery_aws_config: "{{ lookup('ansible.builtin.env', 'AWS_CONFIG_FILE') | default('~/.aws/config', true) }}"

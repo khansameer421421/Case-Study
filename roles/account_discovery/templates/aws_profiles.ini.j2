@@ -1,0 +1,14 @@
+{% for a in account_discovery_targets %}
+[profile {{ aws_profile_prefix }}-{{ a.id }}]
+# {{ a.name }}
+role_arn = arn:aws:iam::{{ a.id }}:role/{{ member_role_name }}
+role_session_name = ansible-diskmon
+duration_seconds = 3600
+{% if controller_source_profile | length > 0 %}
+source_profile = {{ controller_source_profile }}
+{% else %}
+credential_source = {{ controller_credential_source }}
+{% endif %}
+region = {{ a.regions | first }}
+
+{% endfor %}

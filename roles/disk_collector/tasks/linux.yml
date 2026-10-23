@@ -1,0 +1,14 @@
+---
+# ansible_mounts gives bytes *and* inodes for every mount and honours
+# gather_timeout, so a hung NFS mount cannot stall the whole run.
+- name: Gather mount facts
+  ansible.builtin.setup:
+    gather_subset:
+      - "!all"
+      - hardware
+    gather_timeout: 20
+
+- name: Build filesystem usage records
+  ansible.builtin.set_fact:
+    disk_os: "{{ ansible_distribution | default('linux') }} {{ ansible_distribution_version | default('') }}"
+    disk_usage: "{{ lookup('ansible.builtin.template', 'linux_disk_usage.j2') | from_json }}"

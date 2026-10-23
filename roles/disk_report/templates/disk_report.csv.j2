@@ -1,0 +1,10 @@
+account_id,account_name,region,host,name,mount,fstype,size_gb,avail_gb,used_pct,inode_used_pct,status,collect_status,collected_at
+{% for h in disk_fleet %}
+{% if h.filesystems %}
+{% for fs in h.filesystems %}
+{{ h.account_id }},{{ h.account_name }},{{ h.region }},{{ h.host }},"{{ h.name }}",{{ fs.mount }},{{ fs.fstype }},{{ fs.size_gb }},{{ fs.avail_gb }},{{ fs.used_pct }},{{ fs.inode_used_pct }},{{ fs.status }},{{ h.collect_status }},{{ h.collected_at }}
+{% endfor %}
+{% else %}
+{{ h.account_id }},{{ h.account_name }},{{ h.region }},{{ h.host }},"{{ h.name }}",,,,,,,{{ h.status }},{{ h.collect_status }},{{ h.collected_at }}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,11 @@
+---
+- name: Reload CloudWatch agent (linux)
+  ansible.builtin.command:
+    cmd: "{{ cwagent_linux_ctl }} -a fetch-config -m ec2 -s -c file:{{ cwagent_linux_config }}"
+  become: true
+  changed_when: true
+
+- name: Reload CloudWatch agent (windows)
+  ansible.windows.win_powershell:
+    script: |
+      & '{{ cwagent_win_ctl }}' -a fetch-config -m ec2 -s -c 'file:{{ cwagent_win_config }}'

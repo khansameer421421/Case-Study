@@ -1,0 +1,17 @@
+---
+# Full scheduled run (after generate_inventory.yml has refreshed inventory):
+#   1. enroll / re-assert the CloudWatch agent on every VM
+#   2. collect + report (Ansible-native view, coverage gaps, SNS digest)
+#   3. ensure per-filesystem alarms exist for whatever was found
+#   4. prune alarms left behind by terminated instances
+- name: Enroll
+  ansible.builtin.import_playbook: enroll_cloudwatch_agent.yml
+
+- name: Collect and report
+  ansible.builtin.import_playbook: collect_disk_usage.yml
+
+- name: Alarms
+  ansible.builtin.import_playbook: configure_alarms.yml
+
+- name: Prune
+  ansible.builtin.import_playbook: prune_alarms.yml

@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Disk monitoring - global IAM baseline for every member account. Deployed by a
+  service-managed StackSet with auto-deployment to the target OUs, in ONE
+  region only (IAM is global). Accounts that join the OU get it automatically.
+
+Parameters:
+  OrganizationId:
+    Type: String
+    AllowedPattern: "^o-[a-z0-9]{10,32}$"
+  MonitoringAccountId:
+    Type: String
+    AllowedPattern: "^[0-9]{12}$"
+  ControllerRoleName:
+    Type: String
+    Default: DiskMonitorControllerRole
+  MemberRoleName:
+    Type: String
+    Default: DiskMonitorAnsibleRole
+  ArtifactBucketName:
+    Type: String
+    Description: Bucket created by 01-monitoring-account.yml.
+  CentralEventBusRegion:
+    Type: String
+    Default: us-east-1
+
+Resources:
+  # Role the Ansible controller assumes. Least privilege: discover instances,
+  # open Session Manager shells on them, manage DiskMon-* alarms. Nothing else.
+  AnsibleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref MemberRoleName
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${MonitoringAccountId}:role/${ControllerRoleName}"
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrganizationId
+      Policies:
+        - PolicyName: disk-monitoring-ansible
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: Discover
+                Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeRegions
+                  - ec2:DescribeTags
+                  - ssm:DescribeInstanceInformation
+                  - ssm:GetConnectionStatus
+                  - ssm:DescribeSessions
+                  - cloudwatch:DescribeAlarms
+                Resource: "*"
+              - Sid: StartSessionOnOptedInInstances
+                Effect: Allow
+                Action: ssm:StartSession
+                Resource: !Sub "arn:${AWS::Partition}:ec2:*:${AWS::AccountId}:instance/*"
+                Condition:
+                  StringNotEquals:
+                    ssm:resourceTag/DiskMonitoring: disabled
+              - Sid: StartSessionDefaultShellDocumentOnly
+                Effect: Allow
+                Action: ssm:StartSession
+                Resource: !Sub "arn:${AWS::Partition}:ssm:*:${AWS::AccountId}:document/SSM-SessionManagerRunShell"
+              - Sid: ManageOwnSessions
+                Effect: Allow
+                Action:
+                  - ssm:TerminateSession
+                  - ssm:ResumeSession
+                Resource: !Sub "arn:${AWS::Partition}:ssm:*:*:session/$${aws:userid}-*"
+              - Sid: SsmTransferBucket
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${ArtifactBucketName}/ansible-ssm/*"
+              - Sid: SsmTransferBucketLookup
+                Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${ArtifactBucketName}"
+              - Sid: ManageDiskAlarmsOnly
+                Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                Resource: !Sub "arn:${AWS::Partition}:cloudwatch:*:${AWS::AccountId}:alarm:DiskMon-*"
+
+  # Instance profile for VMs: SSM agent + CloudWatch agent. Attach to new
+  # launch templates; existing instances without a profile show up in the
+  # no_instance_profile inventory group and the report's coverage gaps.
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DiskMonitorInstanceRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: DiskMonitorInstanceRole
+      Roles:
+        - !Ref InstanceRole
+
+  # Used by the regional EventBridge rules to forward alarm events.
+  EventForwardRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DiskMonitorEventForwardRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: put-central-bus
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: !Sub "arn:${AWS::Partition}:events:${CentralEventBusRegion}:${MonitoringAccountId}:event-bus/disk-monitoring"
+
+Outputs:
+  AnsibleRoleArn:
+    Value: !GetAtt AnsibleRole.Arn
+  InstanceProfileName:
+    Value: !Ref InstanceProfile

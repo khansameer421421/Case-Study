@@ -1,0 +1,36 @@
+---
+# Housekeeping at scale: delete per-filesystem alarms whose instance no longer
+# exists (terminated VMs leave alarms stuck in INSUFFICIENT_DATA, which costs
+# money and hides real signal).
+
+- name: Prune alarms for instances that are gone
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    _accounts: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/../inventories/accounts.generated.json') | from_json }}"
+    _live_instance_ids: "{{ groups['all'] | map('extract', hostvars) | selectattr('instance_id', 'defined') | map(attribute='instance_id') | list }}"
+  tasks:
+    - name: List per-filesystem alarms with no data
+      amazon.aws.cloudwatch_metric_alarm_info:
+        profile: "{{ aws_profile_prefix }}-{{ item.0.id }}"
+        region: "{{ item.1 }}"
+        alarm_name_prefix: "{{ alarm_prefix }}-fs-"
+        state_value: INSUFFICIENT_DATA
+      loop: "{{ _accounts | subelements('regions') }}"
+      loop_control:
+        label: "{{ item.0.id }}/{{ item.1 }}"
+      register: prune_found
+
+    - name: Delete alarms whose InstanceId is no longer in inventory
+      amazon.aws.cloudwatch_metric_alarm:
+        profile: "{{ aws_profile_prefix }}-{{ item.0.item.0.id }}"
+        region: "{{ item.0.item.1 }}"
+        name: "{{ item.1.alarm_name }}"
+        state: absent
+      loop: "{{ prune_found.results | subelements('metric_alarms', skip_missing=true) }}"
+      loop_control:
+        label: "{{ item.1.alarm_name }}"
+      when: >-
+        (item.1.dimensions | selectattr('name', 'equalto', 'InstanceId')
+         | map(attribute='value') | first | default('')) not in _live_instance_ids

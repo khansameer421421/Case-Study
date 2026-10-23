@@ -1,0 +1,79 @@
+---
+- name: Work out package flavour for this distribution
+  ansible.builtin.set_fact:
+    cwagent_arch: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}"
+    cwagent_pkg_os: >-
+      {%- if ansible_distribution == 'Amazon' -%}amazon_linux
+      {%- elif ansible_distribution == 'Ubuntu' -%}ubuntu
+      {%- elif ansible_os_family == 'Debian' -%}debian
+      {%- elif ansible_os_family == 'Suse' -%}suse
+      {%- else -%}redhat{%- endif -%}
+    cwagent_pkg_ext: "{{ 'deb' if ansible_os_family == 'Debian' else 'rpm' }}"
+
+- name: Install the agent from the distro repository (Amazon Linux)
+  ansible.builtin.package:
+    name: amazon-cloudwatch-agent
+    state: present
+  become: true
+  when: ansible_distribution == 'Amazon'
+
+- name: Check whether the agent is already installed
+  ansible.builtin.stat:
+    path: "{{ cwagent_linux_ctl }}"
+  register: cwagent_ctl_stat
+
+- name: Install the agent from the AWS-published package (other distributions)
+  when:
+    - ansible_distribution != 'Amazon'
+    - not cwagent_ctl_stat.stat.exists
+  become: true
+  block:
+    - name: Import the CloudWatch agent signing key (rpm)
+      ansible.builtin.rpm_key:
+        key: "{{ cwagent_gpg_key_url }}"
+        state: present
+      when: cwagent_pkg_ext == 'rpm'
+
+    - name: Download the agent package
+      ansible.builtin.get_url:
+        url: "{{ cwagent_download_base }}/{{ cwagent_pkg_os }}/{{ cwagent_arch }}/latest/amazon-cloudwatch-agent.{{ cwagent_pkg_ext }}"
+        dest: "/tmp/amazon-cloudwatch-agent.{{ cwagent_pkg_ext }}"
+        mode: "0644"
+
+    - name: Install the agent (deb)
+      ansible.builtin.apt:
+        deb: /tmp/amazon-cloudwatch-agent.deb
+      when: cwagent_pkg_ext == 'deb'
+
+    - name: Install the agent (rpm)
+      ansible.builtin.package:
+        name: /tmp/amazon-cloudwatch-agent.rpm
+        state: present
+      when: cwagent_pkg_ext == 'rpm'
+
+- name: Deploy agent configuration (disk metrics only)
+  ansible.builtin.template:
+    src: amazon-cloudwatch-agent.linux.json.j2
+    dest: "{{ cwagent_linux_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Reload CloudWatch agent (linux)
+
+- name: Apply configuration now so the status check below is accurate
+  ansible.builtin.meta: flush_handlers
+
+- name: Read agent status
+  ansible.builtin.command:
+    cmd: "{{ cwagent_linux_ctl }} -a status"
+  register: cwagent_status
+  changed_when: false
+  become: true
+
+- name: Start the agent if it is not running
+  ansible.builtin.command:
+    cmd: "{{ cwagent_linux_ctl }} -a fetch-config -m ec2 -s -c file:{{ cwagent_linux_config }}"
+  become: true
+  changed_when: true
+  when: (cwagent_status.stdout | from_json).status != 'running'

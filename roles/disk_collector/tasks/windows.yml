@@ -1,0 +1,20 @@
+---
+- name: Query fixed logical disks
+  ansible.windows.win_powershell:
+    script: |
+      $Ansible.Changed = $false
+      Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" |
+        Select-Object DeviceID, FileSystem, Size, FreeSpace
+  register: disk_win_raw
+
+- name: Query OS caption
+  ansible.windows.win_powershell:
+    script: |
+      $Ansible.Changed = $false
+      (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+  register: disk_win_os
+
+- name: Build filesystem usage records
+  ansible.builtin.set_fact:
+    disk_os: "{{ disk_win_os.output | first | default('Windows') }}"
+    disk_usage: "{{ lookup('ansible.builtin.template', 'windows_disk_usage.j2') | from_json }}"

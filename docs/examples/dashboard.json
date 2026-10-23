@@ -1,0 +1,406 @@
+{
+  "widgets": [
+    {
+      "height": 2,
+      "properties": {
+        "markdown": "## Disk utilisation - all linked accounts\nWarning 80% / critical 90%. Source: CloudWatch agent (`CWAgent`) via cross-account observability. Hourly Ansible reports: `s3://disk-monitoring-111111111111-us-east-1/reports/latest/disk_report.html`"
+      },
+      "type": "text",
+      "width": 24,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "height": 8,
+      "properties": {
+        "annotations": {
+          "horizontal": [
+            {
+              "color": "#ff9900",
+              "label": "warning",
+              "value": 80
+            },
+            {
+              "color": "#d13212",
+              "label": "critical",
+              "value": 90
+            }
+          ]
+        },
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MAX() DESC LIMIT 25",
+              "id": "q1",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-central-1",
+        "stacked": false,
+        "title": "eu-central-1 - 25 fullest filesystems",
+        "view": "timeSeries",
+        "yAxis": {
+          "left": {
+            "label": "% used",
+            "max": 100,
+            "min": 0,
+            "showUnits": false
+          }
+        }
+      },
+      "type": "metric",
+      "width": 16,
+      "x": 0,
+      "y": 2
+    },
+    {
+      "height": 8,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId ORDER BY MAX() DESC",
+              "id": "q2",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-central-1",
+        "title": "eu-central-1 - fullest filesystem per account",
+        "view": "bar",
+        "yAxis": {
+          "left": {
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      "type": "metric",
+      "width": 8,
+      "x": 16,
+      "y": 2
+    },
+    {
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MIN(disk_inodes_free) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MIN() ASC LIMIT 10",
+              "id": "q3",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-central-1",
+        "title": "eu-central-1 - lowest free inodes (inode exhaustion fills a disk with space left)",
+        "view": "timeSeries"
+      },
+      "type": "metric",
+      "width": 24,
+      "x": 0,
+      "y": 10
+    },
+    {
+      "height": 8,
+      "properties": {
+        "annotations": {
+          "horizontal": [
+            {
+              "color": "#ff9900",
+              "label": "warning",
+              "value": 80
+            },
+            {
+              "color": "#d13212",
+              "label": "critical",
+              "value": 90
+            }
+          ]
+        },
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MAX() DESC LIMIT 25",
+              "id": "q1",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-west-1",
+        "stacked": false,
+        "title": "eu-west-1 - 25 fullest filesystems",
+        "view": "timeSeries",
+        "yAxis": {
+          "left": {
+            "label": "% used",
+            "max": 100,
+            "min": 0,
+            "showUnits": false
+          }
+        }
+      },
+      "type": "metric",
+      "width": 16,
+      "x": 0,
+      "y": 16
+    },
+    {
+      "height": 8,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId ORDER BY MAX() DESC",
+              "id": "q2",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-west-1",
+        "title": "eu-west-1 - fullest filesystem per account",
+        "view": "bar",
+        "yAxis": {
+          "left": {
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      "type": "metric",
+      "width": 8,
+      "x": 16,
+      "y": 16
+    },
+    {
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MIN(disk_inodes_free) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MIN() ASC LIMIT 10",
+              "id": "q3",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "eu-west-1",
+        "title": "eu-west-1 - lowest free inodes (inode exhaustion fills a disk with space left)",
+        "view": "timeSeries"
+      },
+      "type": "metric",
+      "width": 24,
+      "x": 0,
+      "y": 24
+    },
+    {
+      "height": 8,
+      "properties": {
+        "annotations": {
+          "horizontal": [
+            {
+              "color": "#ff9900",
+              "label": "warning",
+              "value": 80
+            },
+            {
+              "color": "#d13212",
+              "label": "critical",
+              "value": 90
+            }
+          ]
+        },
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MAX() DESC LIMIT 25",
+              "id": "q1",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-east-1",
+        "stacked": false,
+        "title": "us-east-1 - 25 fullest filesystems",
+        "view": "timeSeries",
+        "yAxis": {
+          "left": {
+            "label": "% used",
+            "max": 100,
+            "min": 0,
+            "showUnits": false
+          }
+        }
+      },
+      "type": "metric",
+      "width": 16,
+      "x": 0,
+      "y": 30
+    },
+    {
+      "height": 8,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId ORDER BY MAX() DESC",
+              "id": "q2",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-east-1",
+        "title": "us-east-1 - fullest filesystem per account",
+        "view": "bar",
+        "yAxis": {
+          "left": {
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      "type": "metric",
+      "width": 8,
+      "x": 16,
+      "y": 30
+    },
+    {
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MIN(disk_inodes_free) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MIN() ASC LIMIT 10",
+              "id": "q3",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-east-1",
+        "title": "us-east-1 - lowest free inodes (inode exhaustion fills a disk with space left)",
+        "view": "timeSeries"
+      },
+      "type": "metric",
+      "width": 24,
+      "x": 0,
+      "y": 38
+    },
+    {
+      "height": 8,
+      "properties": {
+        "annotations": {
+          "horizontal": [
+            {
+              "color": "#ff9900",
+              "label": "warning",
+              "value": 80
+            },
+            {
+              "color": "#d13212",
+              "label": "critical",
+              "value": 90
+            }
+          ]
+        },
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MAX() DESC LIMIT 25",
+              "id": "q1",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-west-2",
+        "stacked": false,
+        "title": "us-west-2 - 25 fullest filesystems",
+        "view": "timeSeries",
+        "yAxis": {
+          "left": {
+            "label": "% used",
+            "max": 100,
+            "min": 0,
+            "showUnits": false
+          }
+        }
+      },
+      "type": "metric",
+      "width": 16,
+      "x": 0,
+      "y": 44
+    },
+    {
+      "height": 8,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId ORDER BY MAX() DESC",
+              "id": "q2",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-west-2",
+        "title": "us-west-2 - fullest filesystem per account",
+        "view": "bar",
+        "yAxis": {
+          "left": {
+            "max": 100,
+            "min": 0
+          }
+        }
+      },
+      "type": "metric",
+      "width": 8,
+      "x": 16,
+      "y": 44
+    },
+    {
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            {
+              "expression": "SELECT MIN(disk_inodes_free) FROM SCHEMA(CWAgent, InstanceId, fstype, path) GROUP BY AWS.AccountId, InstanceId, path ORDER BY MIN() ASC LIMIT 10",
+              "id": "q3",
+              "label": "",
+              "period": 300
+            }
+          ]
+        ],
+        "period": 300,
+        "region": "us-west-2",
+        "title": "us-west-2 - lowest free inodes (inode exhaustion fills a disk with space left)",
+        "view": "timeSeries"
+      },
+      "type": "metric",
+      "width": 24,
+      "x": 0,
+      "y": 52
+    }
+  ]
+}

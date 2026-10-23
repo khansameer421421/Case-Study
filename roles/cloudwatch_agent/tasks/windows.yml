@@ -1,0 +1,21 @@
+---
+- name: Install the agent (msi)
+  ansible.windows.win_package:
+    path: "{{ cwagent_download_base }}/windows/amd64/latest/amazon-cloudwatch-agent.msi"
+    creates_path: "{{ cwagent_win_ctl }}"
+    state: present
+
+- name: Deploy agent configuration (disk metrics only)
+  ansible.windows.win_template:
+    src: amazon-cloudwatch-agent.windows.json.j2
+    dest: "{{ cwagent_win_config }}"
+  notify: Reload CloudWatch agent (windows)
+
+- name: Apply configuration before checking the service
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure the agent service is running
+  ansible.windows.win_service:
+    name: AmazonCloudWatchAgent
+    start_mode: auto
+    state: started

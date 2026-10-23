@@ -1,0 +1,92 @@
+---
+# Discover in-scope AWS accounts and render one aws_ec2 inventory source plus
+# one assume-role profile per account. Adding an account to the organization
+# is therefore the only step needed to bring its VMs under monitoring.
+
+- name: List accounts from AWS Organizations
+  ansible.builtin.command:
+    argv: "{{ ['aws', 'organizations', 'list-accounts', '--output', 'json']
+              + (['--profile', org_reader_profile] if org_reader_profile | length > 0 else []) }}"
+  register: account_discovery_org
+  changed_when: false
+  when: account_discovery_mode == 'organizations'
+
+- name: Build the list of target accounts
+  vars:
+    # Organizations is replacing Status with State; accept either.
+    _org_accounts: "{{ (account_discovery_org.stdout | from_json).Accounts
+                       if account_discovery_mode == 'organizations' else [] }}"
+  ansible.builtin.set_fact:
+    account_discovery_targets: >-
+      {%- set out = [] -%}
+      {%- for a in _org_accounts
+            if (a.State | default(a.Status)) == 'ACTIVE' and a.Id not in excluded_account_ids -%}
+      {%-   set _ = out.append({'id': a.Id, 'name': a.Name}) -%}
+      {%- endfor -%}
+      {%- for a in static_accounts
+            if a.id not in excluded_account_ids and a.id not in (out | map(attribute='id') | list) -%}
+      {%-   set _ = out.append({'id': a.id, 'name': a.name}) -%}
+      {%- endfor -%}
+      {%- set final = [] -%}
+      {%- for a in out -%}
+      {%-   set _ = final.append(a | combine({'regions': account_overrides[a.id].regions
+                                                if a.id in account_overrides
+                                                   and account_overrides[a.id].regions is defined
+                                                else default_regions})) -%}
+      {%- endfor -%}
+      {{ final | sort(attribute='id') }}
+
+- name: Show what will be monitored
+  ansible.builtin.debug:
+    msg: "{{ account_discovery_targets | length }} account(s): {{ account_discovery_targets | map(attribute='id') | join(', ') }}"
+
+- name: Ensure the AWS config directory exists
+  ansible.builtin.file:
+    path: "{{ account_discovery_aws_config | dirname }}"
+    state: directory
+    mode: "0700"
+
+- name: Write one assume-role profile per member account
+  ansible.builtin.blockinfile:
+    path: "{{ account_discovery_aws_config }}"
+    create: true
+    mode: "0600"
+    marker: "# {mark} ANSIBLE MANAGED - disk monitoring member account profiles"
+    block: "{{ lookup('ansible.builtin.template', 'aws_profiles.ini.j2') }}"
+
+- name: Ensure the inventory directory exists
+  ansible.builtin.file:
+    path: "{{ account_discovery_inventory_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Render an aws_ec2 inventory source per account
+  ansible.builtin.template:
+    src: aws_ec2.yml.j2
+    dest: "{{ account_discovery_inventory_dir }}/{{ account.id }}.aws_ec2.yml"
+    mode: "0644"
+  loop: "{{ account_discovery_targets }}"
+  loop_control:
+    loop_var: account
+    label: "{{ account.id }} ({{ account.name }})"
+
+- name: Find inventory sources for accounts that are no longer in scope
+  ansible.builtin.find:
+    paths: "{{ account_discovery_inventory_dir }}"
+    patterns: "*.aws_ec2.yml"
+  register: account_discovery_existing
+
+- name: Remove stale inventory sources (account closed, moved or excluded)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ account_discovery_existing.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: (item.path | basename | split('.') | first) not in (account_discovery_targets | map(attribute='id'))
+
+- name: Write the account list for other playbooks (dashboard, alarm pruning)
+  ansible.builtin.copy:
+    content: "{{ account_discovery_targets | to_nice_json }}\n"
+    dest: "{{ account_discovery_inventory_dir }}/../accounts.generated.json"
+    mode: "0644"

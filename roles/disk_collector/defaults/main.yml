@@ -1,0 +1,22 @@
+---
+# Thresholds / filters normally come from playbooks/group_vars/all.yml;
+# these defaults keep the role usable on its own.
+disk_warning_pct: 80
+disk_critical_pct: 90
+inode_warning_pct: 80
+inode_critical_pct: 90
+disk_connect_timeout: 60
+disk_exclude_fstypes: [tmpfs, devtmpfs, overlay, squashfs, proc, sysfs]
+disk_exclude_mount_regex: '^/(proc|sys|dev|run|snap)(/|$)'
+
+# Identity attached to every record so the aggregated report can be sliced
+# by account / region. Inventory vars come from the aws_ec2 compose block.
+disk_host_meta:
+  host: "{{ inventory_hostname }}"
+  name: "{{ (tags | default({})).Name | default(ansible_hostname | default(inventory_hostname)) }}"
+  instance_id: "{{ instance_id | default('') }}"
+  account_id: "{{ aws_account_id | default('n/a') }}"
+  account_name: "{{ aws_account_name | default('n/a') }}"
+  region: "{{ aws_region | default('n/a') }}"
+  environment: "{{ (tags | default({})).Environment | default('untagged') }}"
+  collected_at: "{{ now(utc=true).strftime('%Y-%m-%dT%H:%M:%SZ') }}"

@@ -1,0 +1,8 @@
+.cache/
+collections/
+reports/
+inventories/aws/*.aws_ec2.yml
+inventories/accounts.generated.json
+*.retry
+__pycache__/
+.venv/

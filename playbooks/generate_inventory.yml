@@ -1,0 +1,14 @@
+---
+# Step 0 (run on a schedule, and before the other playbooks).
+# Inventory is parsed when ansible-playbook starts, so this must be a separate
+# invocation from the playbooks that consume the generated sources.
+#
+#   ansible-playbook playbooks/generate_inventory.yml
+- name: Discover AWS accounts and generate per-account inventory sources
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../config/accounts.yml
+  roles:
+    - account_discovery

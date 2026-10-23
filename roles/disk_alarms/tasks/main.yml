@@ -1,0 +1,64 @@
+---
+# One warning + one critical alarm per filesystem the collector found, created
+# in the VM's own account through the assumed member role. Running this after
+# every collection means newly attached volumes get alarms automatically.
+#
+# Requires disk_host_summary from the disk_collector role and an EC2 host
+# (instance_id / aws_profile come from the aws_ec2 inventory).
+
+- name: Skip hosts without collected data or outside EC2
+  ansible.builtin.meta: end_host
+  when: >-
+    instance_id is not defined
+    or disk_host_summary is not defined
+    or disk_host_summary.collect_status != 'ok'
+
+- name: Create per-filesystem alarms (Linux - disk_used_percent)
+  amazon.aws.cloudwatch_metric_alarm:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    state: present
+    name: "{{ alarm_prefix }}-fs-{{ item.1.name }}-{{ instance_id }}-{{ (item.0.mount == '/') | ternary('root', item.0.mount | regex_replace('[^A-Za-z0-9_.-]', '_') | regex_replace('^_', '')) }}"
+    description: "{{ item.1.name | upper }}: {{ item.0.mount }} on {{ disk_host_summary.name }} ({{ instance_id }}) >= {{ item.1.threshold }}% used"
+    namespace: "{{ cwagent_namespace }}"
+    metric_name: disk_used_percent
+    dimensions:
+      InstanceId: "{{ instance_id }}"
+      path: "{{ item.0.mount }}"
+      fstype: "{{ item.0.fstype }}"
+    statistic: Maximum
+    comparison: GreaterThanOrEqualToThreshold
+    threshold: "{{ item.1.threshold | float }}"
+    period: "{{ alarm_period_seconds }}"
+    evaluation_periods: "{{ alarm_evaluation_periods }}"
+    treat_missing_data: missing
+  delegate_to: localhost
+  loop: "{{ disk_host_summary.filesystems | product(disk_alarm_levels) | list }}"
+  loop_control:
+    label: "{{ item.1.name }} {{ item.0.mount }}"
+  when: "'windows' not in group_names"
+
+- name: Create per-volume alarms (Windows - LogicalDisk % Free Space)
+  amazon.aws.cloudwatch_metric_alarm:
+    profile: "{{ aws_profile }}"
+    region: "{{ aws_region }}"
+    state: present
+    name: "{{ alarm_prefix }}-fs-{{ item.1.name }}-{{ instance_id }}-{{ item.0.mount | regex_replace('[^A-Za-z0-9]', '') }}"
+    description: "{{ item.1.name | upper }}: {{ item.0.mount }} on {{ disk_host_summary.name }} ({{ instance_id }}) >= {{ item.1.threshold }}% used"
+    namespace: "{{ cwagent_namespace }}"
+    metric_name: LogicalDisk % Free Space
+    dimensions:
+      InstanceId: "{{ instance_id }}"
+      instance: "{{ item.0.mount }}"
+      objectname: LogicalDisk
+    statistic: Minimum
+    comparison: LessThanOrEqualToThreshold
+    threshold: "{{ 100 - (item.1.threshold | float) }}"
+    period: "{{ alarm_period_seconds }}"
+    evaluation_periods: "{{ alarm_evaluation_periods }}"
+    treat_missing_data: missing
+  delegate_to: localhost
+  loop: "{{ disk_host_summary.filesystems | product(disk_alarm_levels) | list }}"
+  loop_control:
+    label: "{{ item.1.name }} {{ item.0.mount }}"
+  when: "'windows' in group_names"

@@ -1,0 +1,24 @@
+{#- NTFS has no inode limit, so only space is evaluated. -#}
+{%- set rows = [] -%}
+{%- for d in disk_win_raw.output if (d.Size | default(0) | int) > 0 -%}
+{%-   set size = d.Size | int -%}
+{%-   set avail = d.FreeSpace | default(0) | int -%}
+{%-   set used_pct = ((size - avail) / size * 100) | round(1) -%}
+{%-   if used_pct >= disk_critical_pct -%}
+{%-     set status = 'critical' -%}
+{%-   elif used_pct >= disk_warning_pct -%}
+{%-     set status = 'warning' -%}
+{%-   else -%}
+{%-     set status = 'ok' -%}
+{%-   endif -%}
+{%-   set _ = rows.append({
+        'mount': d.DeviceID,
+        'device': d.DeviceID,
+        'fstype': d.FileSystem | default('NTFS'),
+        'size_gb': (size / 1073741824) | round(2),
+        'avail_gb': (avail / 1073741824) | round(2),
+        'used_pct': used_pct,
+        'inode_used_pct': 0.0,
+        'status': status}) -%}
+{%- endfor -%}
+{{ rows | to_json }}

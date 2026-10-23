@@ -1,0 +1,20 @@
+{
+  "agent": {
+    "metrics_collection_interval": {{ cwagent_metrics_interval }},
+    "run_as_user": "cwagent"
+  },
+  "metrics": {
+    "namespace": "{{ cwagent_namespace }}",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "disk": {
+        "resources": ["*"],
+        "measurement": {{ cwagent_disk_measurements | to_json }},
+        "ignore_file_system_types": {{ disk_exclude_fstypes | to_json }},
+        "drop_device": true
+      }
+    }
+  }
+}

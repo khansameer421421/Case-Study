@@ -1,0 +1,107 @@
+---
+# Runs once on the controller after collection. Every targeted host appears
+# in the output - with data, or flagged as unreachable/error.
+
+- name: Aggregate per-host results
+  vars:
+    _targeted: "{{ query('ansible.builtin.inventory_hostnames', disk_report_target) }}"
+  ansible.builtin.set_fact:
+    disk_fleet: >-
+      {%- set out = [] -%}
+      {%- for h in _targeted -%}
+      {%-   set _ = out.append(hostvars[h].disk_host_summary | default({
+              'host': h, 'name': h, 'instance_id': '', 'account_id': hostvars[h].aws_account_id | default('n/a'),
+              'account_name': hostvars[h].aws_account_name | default('n/a'),
+              'region': hostvars[h].aws_region | default('n/a'), 'environment': 'untagged',
+              'collected_at': '', 'os': '', 'collect_status': 'unreachable',
+              'collect_error': 'host dropped from play before collection', 'status': 'unknown',
+              'max_used_pct': none, 'filesystems': []})) -%}
+      {%- endfor -%}
+      {{ out }}
+    disk_report_ts: "{{ now(utc=true).strftime('%Y%m%dT%H%M%SZ') }}"
+    disk_report_generated: "{{ now(utc=true).strftime('%Y-%m-%d %H:%M:%S UTC') }}"
+
+- name: Derive findings and fleet statistics
+  ansible.builtin.set_fact:
+    disk_findings: >-
+      {%- set out = [] -%}
+      {%- for h in disk_fleet -%}
+      {%-   for fs in h.filesystems if fs.status != 'ok' -%}
+      {%-     set _ = out.append(fs | combine({'host': h.host, 'name': h.name, 'account_id': h.account_id,
+                                               'account_name': h.account_name, 'region': h.region})) -%}
+      {%-   endfor -%}
+      {%- endfor -%}
+      {{ out | sort(attribute='used_pct', reverse=true) | sort(attribute='status') }}
+    disk_gaps: "{{ disk_fleet | rejectattr('collect_status', 'equalto', 'ok') | list }}"
+    disk_stats:
+      hosts_total: "{{ disk_fleet | length }}"
+      hosts_reporting: "{{ disk_fleet | selectattr('collect_status', 'equalto', 'ok') | list | length }}"
+      hosts_gap: "{{ disk_fleet | rejectattr('collect_status', 'equalto', 'ok') | list | length }}"
+      filesystems: "{{ disk_fleet | map(attribute='filesystems') | flatten | length }}"
+      critical: "{{ disk_fleet | map(attribute='filesystems') | flatten | selectattr('status', 'equalto', 'critical') | list | length }}"
+      warning: "{{ disk_fleet | map(attribute='filesystems') | flatten | selectattr('status', 'equalto', 'warning') | list | length }}"
+      accounts: "{{ disk_fleet | map(attribute='account_id') | unique | list | length }}"
+
+- name: Create report directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ report_dir }}/{{ disk_report_ts }}"
+    - "{{ report_dir }}/latest"
+
+- name: Render reports (JSON, CSV, HTML)
+  ansible.builtin.template:
+    src: "{{ item.0 }}"
+    dest: "{{ report_dir }}/{{ item.1 }}/{{ item.0 | regex_replace('\\.j2$', '') }}"
+    mode: "0644"
+  loop: "{{ ['disk_report.json.j2', 'disk_report.csv.j2', 'disk_report.html.j2']
+            | product([disk_report_ts, 'latest']) | list }}"
+  loop_control:
+    label: "{{ item.1 }}/{{ item.0 | regex_replace('\\.j2$', '') }}"
+
+- name: Append fleet statistics to history (used for trend graphs)
+  ansible.builtin.lineinfile:
+    path: "{{ report_dir }}/history.csv"
+    line: "{{ disk_report_ts }},{{ disk_stats.hosts_total }},{{ disk_stats.hosts_reporting }},{{ disk_stats.hosts_gap }},{{ disk_stats.filesystems }},{{ disk_stats.warning }},{{ disk_stats.critical }}"
+    insertafter: EOF
+    create: true
+    mode: "0644"
+
+- name: Publish reports to the central S3 bucket
+  amazon.aws.s3_object:
+    bucket: "{{ report_s3_bucket }}"
+    region: "{{ report_s3_region }}"
+    object: "{{ report_s3_prefix }}/{{ item.1 }}/{{ item.0 }}"
+    src: "{{ report_dir }}/{{ item.1 }}/{{ item.0 }}"
+    mode: put
+    encrypt: true
+  loop: "{{ ['disk_report.json', 'disk_report.csv', 'disk_report.html'] | product([disk_report_ts, 'latest']) | list }}"
+  loop_control:
+    label: "s3://{{ report_s3_bucket }}/{{ report_s3_prefix }}/{{ item.1 }}/{{ item.0 }}"
+  when: report_publish_s3 | bool
+
+- name: Send an alert for critical/warning filesystems and coverage gaps
+  community.aws.sns:
+    topic: "{{ alert_sns_topic_arn }}"
+    region: "{{ alert_sns_topic_arn.split(':')[3] }}"
+    subject: "[disk] {{ disk_stats.critical }} critical, {{ disk_stats.warning }} warning, {{ disk_stats.hosts_gap }} unreachable"
+    msg: "{{ lookup('ansible.builtin.template', 'disk_alert.txt.j2') }}"
+  when:
+    - alert_via_sns | bool
+    - (disk_stats.critical | int) + (disk_stats.warning | int) + (disk_stats.hosts_gap | int) > 0
+
+- name: Fleet summary
+  ansible.builtin.debug:
+    msg:
+      - "Hosts: {{ disk_stats.hosts_reporting }}/{{ disk_stats.hosts_total }} reporting across {{ disk_stats.accounts }} account(s)"
+      - "Filesystems: {{ disk_stats.filesystems }} ({{ disk_stats.critical }} critical, {{ disk_stats.warning }} warning)"
+      - "Coverage gaps: {{ disk_gaps | map(attribute='host') | join(', ') or 'none' }}"
+      - "Report: {{ report_dir }}/latest/disk_report.html"
+
+- name: Fail the run if any filesystem is critical
+  ansible.builtin.assert:
+    that: (disk_stats.critical | int) == 0
+    fail_msg: "{{ disk_stats.critical }} filesystem(s) above {{ disk_critical_pct }}%"
+  when: report_fail_on_critical | bool

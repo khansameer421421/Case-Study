@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 850" width="1320" height="850" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+    <style>
+      .t { font-size: 15px; font-weight: 600; }
+      .s { font-size: 12px; fill: #475569; }
+      .b { font-weight: 600; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1; }
+      .ln { fill: none; stroke: #334155; stroke-width: 1.6; }
+      .al { fill: none; stroke: #dc2626; stroke-width: 1.6; }
+      .ml { fill: none; stroke: #059669; stroke-width: 1.6; }
+      .lbl { font-size: 12px; font-weight: 600; fill: #0f172a; }
+      .n { font-size: 11px; font-weight: 700; fill: #ffffff; }
+    </style>
+  </defs>
+
+  <rect width="1320" height="850" fill="#ffffff"/>
+  <text x="30" y="34" font-size="20" font-weight="700">Disk utilisation monitoring - AWS, multi-account</text>
+  <text x="560" y="34" class="s">Ansible = control plane (access, discovery, enrollment, reporting) · CloudWatch = continuous data plane</text>
+
+  <!-- ===================== Management account ===================== -->
+  <rect x="30" y="90" width="300" height="190" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="46" y="116" class="t">Management account</text>
+  <rect x="46" y="130" width="268" height="54" rx="6" class="box"/>
+  <text x="58" y="152" class="b">AWS Organizations</text>
+  <text x="58" y="171" class="s">source of truth for accounts and OUs</text>
+  <rect x="46" y="196" width="268" height="70" rx="6" class="box"/>
+  <text x="58" y="218" class="b">CloudFormation StackSets</text>
+  <text x="58" y="237" class="s">service-managed, auto-deploy to target OUs:</text>
+  <text x="58" y="254" class="s">new / acquired accounts get the baseline</text>
+
+  <!-- ===================== Operators ===================== -->
+  <rect x="30" y="620" width="300" height="170" rx="10" fill="#fef2f2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="46" y="646" class="t">Ops / SRE / app owners</text>
+  <text x="46" y="672">Email, Slack, PagerDuty, ITSM</text>
+  <text x="46" y="690" class="s">subscribed to the SNS topic</text>
+  <text x="46" y="716">CloudWatch dashboard</text>
+  <text x="46" y="734" class="s">fleet view across all accounts/regions</text>
+  <text x="46" y="760">HTML / CSV report in S3</text>
+  <text x="46" y="778" class="s">hourly Ansible snapshot + coverage gaps</text>
+
+  <!-- ===================== Monitoring account ===================== -->
+  <rect x="380" y="90" width="470" height="700" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="396" y="116" class="t">Monitoring / tooling account</text>
+
+  <rect x="405" y="132" width="420" height="208" rx="6" class="box"/>
+  <text x="418" y="154" class="b">Ansible controller (EC2 or AWX, private subnet)</text>
+  <text x="418" y="172" class="s">role DiskMonitorControllerRole · no static keys · SSM access</text>
+  <text x="418" y="198">generate_inventory.yml</text><text x="600" y="198" class="s">org accounts → aws_ec2 sources</text>
+  <text x="418" y="220">enroll_cloudwatch_agent.yml</text><text x="600" y="220" class="s">install + configure agent, in waves</text>
+  <text x="418" y="242">collect_disk_usage.yml</text><text x="600" y="242" class="s">pull, aggregate, HTML/JSON/CSV</text>
+  <text x="418" y="264">configure_alarms.yml</text><text x="600" y="264" class="s">warn/crit alarm per filesystem</text>
+  <text x="418" y="286">prune_alarms.yml</text><text x="600" y="286" class="s">remove alarms of terminated VMs</text>
+  <text x="418" y="308">deploy_dashboard.yml</text><text x="600" y="308" class="s">one widget set per region</text>
+  <text x="418" y="330" class="s">scheduled hourly (AWX schedule / cron / EventBridge Scheduler)</text>
+
+  <rect x="405" y="370" width="200" height="110" rx="6" class="box"/>
+  <text x="418" y="392" class="b">CloudWatch dashboard</text>
+  <text x="418" y="411" class="s">Metrics Insights: top-25</text>
+  <text x="418" y="427" class="s">fullest FS, per-account max,</text>
+  <text x="418" y="443" class="s">lowest free inodes</text>
+  <text x="418" y="466" class="b">OAM sink</text><text x="480" y="466" class="s">(one per region)</text>
+
+  <rect x="625" y="370" width="200" height="110" rx="6" class="box"/>
+  <text x="638" y="392" class="b">S3 disk-monitoring-*</text>
+  <text x="638" y="411" class="s">ansible-ssm/  SSM payload</text>
+  <text x="638" y="427" class="s">staging, 1-day expiry</text>
+  <text x="638" y="447" class="s">reports/  HTML, JSON, CSV,</text>
+  <text x="638" y="463" class="s">history, 400-day expiry</text>
+
+  <rect x="405" y="510" width="420" height="110" rx="6" class="box"/>
+  <text x="418" y="532" class="b">EventBridge bus "disk-monitoring"  →  SNS disk-monitoring-alerts</text>
+  <text x="418" y="552" class="s">bus policy: PutEvents allowed only for aws:PrincipalOrgID</text>
+  <text x="418" y="570" class="s">rule: DiskMon-* alarm → ALARM / OK, formatted message</text>
+  <text x="418" y="588" class="s">plus the hourly Ansible digest (critical, warning, unreachable)</text>
+  <text x="418" y="606" class="s">topic encrypted with KMS</text>
+
+  <rect x="405" y="650" width="420" height="124" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="418" y="672" class="b">Security controls</text>
+  <text x="418" y="692" class="s">• Short-lived STS credentials only; trust scoped to org ID + controller role ARN</text>
+  <text x="418" y="710" class="s">• No SSH keys, bastions or inbound ports; every session logged in CloudTrail</text>
+  <text x="418" y="728" class="s">• Member role: Describe*, StartSession, DiskMon-* alarms - nothing else</text>
+  <text x="418" y="746" class="s">• OAM sink accepts metrics only (no logs/traces); TLS-only S3 bucket</text>
+  <text x="418" y="764" class="s">• Opt-out tag DiskMonitoring=disabled is enforced in IAM too</text>
+
+  <!-- ===================== Member accounts (stack) ===================== -->
+  <g transform="translate(40,0)">
+  <rect x="920" y="110" width="340" height="700" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="1"/>
+  <rect x="910" y="100" width="340" height="700" rx="10" fill="#e3fcef" stroke="#10b981" stroke-width="1"/>
+  <rect x="900" y="90" width="340" height="700" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="916" y="116" class="t">Member accounts × N (incl. acquisitions)</text>
+
+  <rect x="920" y="132" width="300" height="74" rx="6" class="box"/>
+  <text x="932" y="154" class="b">IAM role DiskMonitorAnsibleRole</text>
+  <text x="932" y="173" class="s">trusts controller role, aws:PrincipalOrgID</text>
+  <text x="932" y="190" class="s">deployed by StackSet (03-member-account-iam)</text>
+
+  <rect x="920" y="230" width="300" height="170" rx="6" class="box"/>
+  <text x="932" y="252" class="b">EC2 VMs - Linux and Windows, all regions</text>
+  <text x="932" y="274">SSM Agent</text><text x="1010" y="274" class="s">outbound 443 only</text>
+  <text x="932" y="296">CloudWatch agent</text><text x="1050" y="296" class="s">every 60 s:</text>
+  <text x="944" y="314" class="s">disk_used_percent, disk_inodes_free</text>
+  <text x="944" y="330" class="s">(Windows: LogicalDisk % Free Space)</text>
+  <text x="932" y="352" class="s">instance profile DiskMonitorInstanceRole</text>
+  <text x="932" y="370" class="s">opt out: tag DiskMonitoring=disabled</text>
+  <text x="932" y="388" class="s">private subnets: VPC endpoints for SSM + CW</text>
+
+  <rect x="920" y="430" width="300" height="100" rx="6" class="box"/>
+  <text x="932" y="452" class="b">CloudWatch (per account / region)</text>
+  <text x="932" y="472" class="s">metrics namespace CWAgent</text>
+  <text x="932" y="490" class="s">DiskMon-fs-warning|critical-&lt;id&gt;-&lt;mount&gt;</text>
+  <text x="932" y="508" class="s">DiskMon-fleet-backstop (Metrics Insights:</text>
+  <text x="932" y="523" class="s">MAX over every FS, covers brand-new VMs)</text>
+
+  <rect x="920" y="560" width="300" height="56" rx="6" class="box"/>
+  <text x="932" y="582" class="b">EventBridge rule</text>
+  <text x="932" y="600" class="s">DiskMon-* state change → central bus</text>
+
+  <rect x="920" y="640" width="300" height="56" rx="6" class="box"/>
+  <text x="932" y="662" class="b">OAM link</text>
+  <text x="932" y="680" class="s">shares AWS::CloudWatch::Metric with sink</text>
+
+  <text x="920" y="728" class="s">Deployed by StackSet 04-member-account-regional</text>
+  <text x="920" y="745" class="s">in every monitored region; auto-deployed when an</text>
+  <text x="920" y="762" class="s">account joins a target OU.</text>
+  <!-- 5 metrics -->
+  <path class="ml" d="M1070,400 V426" marker-end="url(#g)"/>
+  <circle cx="1090" cy="414" r="9" fill="#059669"/><text x="1086" y="418" class="n">5</text>
+  <path class="al" d="M1070,530 V556" marker-end="url(#r)"/>
+  </g>
+
+  <!-- ===================== Flows ===================== -->
+  <!-- 1 StackSets -> members -->
+  <path class="ln" d="M180,90 V64 H1110 V88" marker-end="url(#a)"/>
+  <circle cx="300" cy="64" r="9" fill="#334155"/><text x="296" y="68" class="n">1</text>
+  <text x="316" y="58" class="lbl">StackSets push IAM role, instance profile, OAM link, alarm forwarding, backstop alarm</text>
+
+  <!-- 2 ListAccounts -->
+  <path class="ln" d="M405,200 H334" marker-end="url(#a)"/>
+  <circle cx="355" cy="186" r="9" fill="#334155"/><text x="351" y="190" class="n">2</text>
+  <text x="338" y="222" class="lbl" font-size="11">ListAccounts</text>
+
+  <!-- 3 AssumeRole + DescribeInstances -->
+  <path class="ln" d="M825,168 H956" marker-end="url(#a)"/>
+  <circle cx="845" cy="154" r="9" fill="#334155"/><text x="841" y="158" class="n">3</text>
+  <text x="858" y="188" class="lbl" font-size="10">AssumeRole</text>
+  <text x="858" y="202" class="lbl" font-size="10">+ Describe-</text>
+  <text x="858" y="215" class="lbl" font-size="10">Instances</text>
+
+  <!-- 4 SSM sessions -->
+  <path class="ln" d="M829,290 H956" marker-start="url(#a)" marker-end="url(#a)"/>
+  <circle cx="845" cy="276" r="9" fill="#334155"/><text x="841" y="280" class="n">4</text>
+  <text x="858" y="310" class="lbl" font-size="10">SSM session</text>
+  <text x="858" y="324" class="lbl" font-size="10">no SSH, no</text>
+  <text x="858" y="338" class="lbl" font-size="10">inbound</text>
+  <!-- SSM payload via S3 -->
+  <path d="M760,370 V352 H900 V296" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="764" y="364" class="s" font-size="10">pre-signed URL</text>
+
+  <!-- 6 alarm -> rule -> central bus -->
+  <path class="al" d="M960,588 H829" marker-end="url(#r)"/>
+  <circle cx="905" cy="574" r="9" fill="#dc2626"/><text x="901" y="578" class="n">6</text>
+  <text x="858" y="606" class="lbl" font-size="10" fill="#dc2626">alarm</text>
+
+  <!-- 7 OAM link -> sink / dashboard -->
+  <path class="ml" d="M960,668 H905 V495 H515 V484" marker-end="url(#g)"/>
+  <circle cx="905" cy="640" r="9" fill="#059669"/><text x="901" y="644" class="n">7</text>
+  <text x="640" y="508" class="lbl" font-size="11" fill="#059669">metrics shared cross-account</text>
+
+  <!-- 8 SNS -> people -->
+  <path class="al" d="M405,566 H356 V690 H334" marker-end="url(#r)"/>
+  <circle cx="356" cy="610" r="9" fill="#dc2626"/><text x="352" y="614" class="n">8</text>
+
+  <!-- 9 reports -->
+  <path class="ln" d="M720,340 V366" marker-end="url(#a)"/>
+  <circle cx="740" cy="354" r="9" fill="#334155"/><text x="736" y="358" class="n">9</text>
+
+  <!-- operators view dashboard -->
+  <path d="M180,620 V425 H401" fill="none" stroke="#64748b" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#a)"/>
+  <text x="190" y="418" class="s">view dashboard / report</text>
+</svg>

@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Disk monitoring - per-region baseline for every member account (StackSet,
+  every monitored region): share metrics with the monitoring account, forward
+  DiskMon-* alarm events to the central bus, and a fleet-wide backstop alarm.
+
+Parameters:
+  MonitoringAccountId:
+    Type: String
+    AllowedPattern: "^[0-9]{12}$"
+  SinkArn:
+    Type: String
+    Description: OAM sink ARN for THIS region (stack-instance parameter override per region).
+  CentralEventBusRegion:
+    Type: String
+    Default: us-east-1
+  BackstopThreshold:
+    Type: Number
+    Default: 90
+
+Resources:
+  MetricsLink:
+    Type: AWS::Oam::Link
+    Properties:
+      LabelTemplate: "$AccountName"
+      ResourceTypes:
+        - AWS::CloudWatch::Metric
+      SinkIdentifier: !Ref SinkArn
+
+  ForwardAlarmEvents:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: disk-alarm-state-forward
+      EventPattern:
+        source: [aws.cloudwatch]
+        detail-type: [CloudWatch Alarm State Change]
+        detail:
+          alarmName: [{ prefix: "DiskMon-" }]
+      Targets:
+        - Id: central-bus
+          Arn: !Sub "arn:${AWS::Partition}:events:${CentralEventBusRegion}:${MonitoringAccountId}:event-bus/disk-monitoring"
+          RoleArn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/DiskMonitorEventForwardRole"
+
+  # One alarm per account/region over EVERY filesystem reporting to
+  # CloudWatch (Metrics Insights query). It covers VMs launched between
+  # Ansible runs, before their per-filesystem alarms exist, at a flat cost
+  # regardless of fleet size.
+  FleetBackstopAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: DiskMon-fleet-backstop
+      AlarmDescription: !Sub "Some filesystem in ${AWS::AccountId}/${AWS::Region} is above ${BackstopThreshold}% used. See the DiskUtilisation dashboard."
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: !Ref BackstopThreshold
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      TreatMissingData: notBreaching
+      Metrics:
+        - Id: fleetmax
+          Expression: "SELECT MAX(disk_used_percent) FROM SCHEMA(CWAgent, InstanceId, fstype, path)"
+          Period: 300
+          ReturnData: true

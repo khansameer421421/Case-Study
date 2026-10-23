@@ -1,0 +1,11 @@
+---
+# Create warning/critical CloudWatch alarms for every filesystem found on
+# every enrolled VM. Re-run after enrollment (site.yml does this) so new
+# instances and newly attached volumes are covered.
+
+- name: Discover filesystems and create per-filesystem alarms
+  hosts: "{{ target | default('all') }}:!no_instance_profile"
+  gather_facts: false
+  roles:
+    - disk_collector
+    - disk_alarms

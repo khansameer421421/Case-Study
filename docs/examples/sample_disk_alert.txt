@@ -1,0 +1,12 @@
+Disk utilisation report - 2026-10-23 09:00:00 UTC
+Hosts reporting: 4/6 across 3 account(s)
+
+Filesystems over threshold (warning 80% / critical 90%):
+  [CRITICAL] 91.4% used (1.72 GB free), inodes 31.0%  / on web-01 (i-0a1b2c3d4e5f60001) - acquired-co-a-prod/us-east-1
+  [CRITICAL] 38.5% used (6.15 GB free), inodes 93.1%  /var/spool/mail on db-01 (i-0a1b2c3d4e5f60002) - acquired-co-b-prod/eu-central-1
+  [WARNING] 88.0% used (30.72 GB free), inodes 0.0%  D: on app-win-01 (i-0a1b2c3d4e5f60003) - acquired-co-a-prod/us-east-1
+  [WARNING] 83.2% used (8.4 GB free), inodes 12.0%  /var/log on web-01 (i-0a1b2c3d4e5f60001) - acquired-co-a-prod/us-east-1
+
+Not reporting (check SSM agent / instance profile):
+  i-0a1b2c3d4e5f60009 (acquired-co-b-prod/eu-central-1): unreachable - timed out waiting for ping module test: SSM session could not be started (TargetNotConnected)
+  i-0a1b2c3d4e5f60010 (corp-shared-services/us-west-2): unreachable - host dropped from play before collection

@@ -1,0 +1,73 @@
+---
+# Shared settings for every playbook. Playbook-adjacent group_vars apply
+# regardless of which inventory (AWS or the local demo) is used.
+
+# ---------------------------------------------------------------- access ----
+monitoring_account_id: "111111111111"
+monitoring_region: us-east-1
+member_role_name: DiskMonitorAnsibleRole
+aws_profile_prefix: diskmon
+
+# How the controller gets the credentials it uses to assume member roles.
+# On the EC2/AWX controller the instance role is used. On a laptop set
+# controller_source_profile to a profile in ~/.aws/config instead.
+controller_credential_source: Ec2InstanceMetadata
+controller_source_profile: ""
+
+# Bucket used by the aws_ssm connection plugin to move module payloads.
+# Objects under this prefix expire after 1 day (see CloudFormation).
+ssm_transfer_bucket: "disk-monitoring-{{ monitoring_account_id }}-{{ monitoring_region }}"
+
+# ------------------------------------------------------------ thresholds ----
+disk_warning_pct: 80
+disk_critical_pct: 90
+inode_warning_pct: 80
+inode_critical_pct: 90
+
+# ------------------------------------------------------------ collection ----
+disk_connect_timeout: 60
+disk_exclude_fstypes:
+  - autofs
+  - binfmt_misc
+  - cgroup
+  - cgroup2
+  - configfs
+  - debugfs
+  - devpts
+  - devtmpfs
+  - fuse.lxcfs
+  - hugetlbfs
+  - iso9660
+  - mqueue
+  - nsfs
+  - overlay
+  - proc
+  - pstore
+  - securityfs
+  - squashfs
+  - sysfs
+  - tmpfs
+  - tracefs
+disk_exclude_mount_regex: '^/(proc|sys|dev|run|snap|var/lib/docker|var/lib/kubelet)(/|$)'
+
+# ------------------------------------------------------------- reporting ----
+report_dir: "{{ playbook_dir }}/../reports"
+report_publish_s3: false
+report_s3_bucket: "{{ ssm_transfer_bucket }}"
+report_s3_prefix: reports
+alert_via_sns: false
+alert_sns_topic_arn: "arn:aws:sns:{{ monitoring_region }}:{{ monitoring_account_id }}:disk-monitoring-alerts"
+# Make the run exit non-zero when anything is critical (handy in CI / AWX).
+report_fail_on_critical: false
+
+# ------------------------------------------------------ CloudWatch agent ----
+cwagent_namespace: CWAgent
+cwagent_metrics_interval: 60
+cwagent_disk_measurements:
+  - used_percent
+  - inodes_free
+
+# ---------------------------------------------------------------- alarms ----
+alarm_prefix: DiskMon
+alarm_period_seconds: 300
+alarm_evaluation_periods: 2

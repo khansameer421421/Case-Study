@@ -1,0 +1,17 @@
+---
+alarm_prefix: DiskMon
+alarm_period_seconds: 300
+alarm_evaluation_periods: 2
+cwagent_namespace: CWAgent
+disk_warning_pct: 80
+disk_critical_pct: 90
+
+# Alarms carry no SNS action: state changes are routed by an EventBridge rule
+# in every member account to the central bus in the monitoring account
+# (cloudformation/03-member-account-regional.yml). That keeps notification
+# targets in one place and avoids cross-account SNS policies.
+disk_alarm_levels:
+  - name: warning
+    threshold: "{{ disk_warning_pct }}"
+  - name: critical
+    threshold: "{{ disk_critical_pct }}"

@@ -1,0 +1,234 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Disk monitoring - central resources in the monitoring (tooling) account,
+  home region: Ansible controller identity, SSM transfer / report bucket,
+  central alert bus and SNS topic.
+
+Parameters:
+  OrganizationId:
+    Type: String
+    AllowedPattern: "^o-[a-z0-9]{10,32}$"
+    Description: AWS Organizations ID (o-xxxxxxxxxx). Scopes every cross-account grant.
+  MemberRoleName:
+    Type: String
+    Default: DiskMonitorAnsibleRole
+  ControllerRoleName:
+    Type: String
+    Default: DiskMonitorControllerRole
+  AlertEmail:
+    Type: String
+    Description: Initial subscriber for disk alerts (add Slack / PagerDuty / ITSM later).
+
+Resources:
+  # ---------------------------------------------------------------- bucket --
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "disk-monitoring-${AWS::AccountId}-${AWS::Region}"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-ssm-transfer
+            Status: Enabled
+            Prefix: ansible-ssm/
+            ExpirationInDays: 1
+          - Id: expire-old-reports
+            Status: Enabled
+            Prefix: reports/
+            ExpirationInDays: 400
+
+  ArtifactBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt ArtifactBucket.Arn
+              - !Sub "${ArtifactBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          # The aws_ssm connection plugin, running as the member-account role,
+          # stages module files here and hands the VM a pre-signed URL.
+          - Sid: AllowMemberRolesSsmTransfer
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+            Resource: !Sub "${ArtifactBucket.Arn}/ansible-ssm/*"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrganizationId
+              ArnLike:
+                aws:PrincipalArn: !Sub "arn:${AWS::Partition}:iam::*:role/${MemberRoleName}"
+          - Sid: AllowMemberRolesBucketLookup
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetBucketLocation
+              - s3:ListBucket
+            Resource: !GetAtt ArtifactBucket.Arn
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: !Ref OrganizationId
+              ArnLike:
+                aws:PrincipalArn: !Sub "arn:${AWS::Partition}:iam::*:role/${MemberRoleName}"
+
+  # ------------------------------------------------------------ controller --
+  ControllerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref ControllerRoleName
+      Description: Identity of the Ansible controller (EC2 / AWX). No long-lived keys.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # Operators reach the controller itself through Session Manager too.
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      Policies:
+        - PolicyName: disk-monitoring-controller
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AssumeMemberRoleInsideOrgOnly
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub "arn:${AWS::Partition}:iam::*:role/${MemberRoleName}"
+                Condition:
+                  StringEquals:
+                    aws:ResourceOrgID: !Ref OrganizationId
+              - Sid: DiscoverAccounts
+                Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeAccount
+                Resource: "*"
+              - Sid: PublishReports
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "${ArtifactBucket.Arn}/reports/*"
+              - Sid: SendDigest
+                Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref AlertTopic
+              - Sid: ManageDashboard
+                Effect: Allow
+                Action:
+                  - cloudwatch:PutDashboard
+                  - cloudwatch:GetDashboard
+                Resource: !Sub "arn:${AWS::Partition}:cloudwatch::${AWS::AccountId}:dashboard/DiskUtilisation"
+
+  ControllerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref ControllerRoleName
+      Roles:
+        - !Ref ControllerRole
+
+  # ---------------------------------------------------------------- alerts --
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: disk-monitoring-alerts
+      KmsMasterKeyId: alias/aws/sns
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref AlertTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowEventBridge
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref AlertTopic
+
+  # Alarm state changes from every member account/region land here.
+  CentralEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: disk-monitoring
+
+  CentralEventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: !Ref CentralEventBus
+      StatementId: AllowOrgPutEvents
+      Statement:
+        Effect: Allow
+        Principal: "*"
+        Action: events:PutEvents
+        Resource: !GetAtt CentralEventBus.Arn
+        Condition:
+          StringEquals:
+            aws:PrincipalOrgID: !Ref OrganizationId
+
+  AlarmToSnsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: disk-alarm-state-to-sns
+      EventBusName: !Ref CentralEventBus
+      EventPattern:
+        source: [aws.cloudwatch]
+        detail-type: [CloudWatch Alarm State Change]
+        detail:
+          alarmName: [{ prefix: "DiskMon-" }]
+          state:
+            value: [ALARM, OK]
+      Targets:
+        - Id: sns
+          Arn: !Ref AlertTopic
+          InputTransformer:
+            InputPathsMap:
+              alarm: "$.detail.alarmName"
+              state: "$.detail.state.value"
+              reason: "$.detail.state.reason"
+              account: "$.account"
+              region: "$.region"
+            InputTemplate: '"[<state>] <alarm> - account <account> / <region>: <reason>"'
+
+Outputs:
+  ControllerRoleArn:
+    Value: !GetAtt ControllerRole.Arn
+  ControllerInstanceProfile:
+    Value: !Ref ControllerInstanceProfile
+  ArtifactBucketName:
+    Value: !Ref ArtifactBucket
+  CentralEventBusArn:
+    Value: !GetAtt CentralEventBus.Arn
+  AlertTopicArn:
+    Value: !Ref AlertTopic

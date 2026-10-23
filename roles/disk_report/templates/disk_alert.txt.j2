@@ -1,0 +1,23 @@
+Disk utilisation report - {{ disk_report_generated }}
+Hosts reporting: {{ disk_stats.hosts_reporting }}/{{ disk_stats.hosts_total }} across {{ disk_stats.accounts }} account(s)
+
+{% if disk_findings %}
+Filesystems over threshold (warning {{ disk_warning_pct }}% / critical {{ disk_critical_pct }}%):
+{% for f in disk_findings[:50] %}
+  [{{ f.status | upper }}] {{ f.used_pct }}% used ({{ f.avail_gb }} GB free), inodes {{ f.inode_used_pct }}%  {{ f.mount }} on {{ f.name }} ({{ f.host }}) - {{ f.account_name }}/{{ f.region }}
+{% endfor %}
+{% if disk_findings | length > 50 %}
+  ... and {{ disk_findings | length - 50 }} more, see the full report.
+{% endif %}
+{% endif %}
+{% if disk_gaps %}
+
+Not reporting (check SSM agent / instance profile):
+{% for g in disk_gaps %}
+  {{ g.host }} ({{ g.account_name }}/{{ g.region }}): {{ g.collect_status }} - {{ g.collect_error }}
+{% endfor %}
+{% endif %}
+{% if report_publish_s3 | bool %}
+
+Full report: s3://{{ report_s3_bucket }}/{{ report_s3_prefix }}/{{ disk_report_ts }}/disk_report.html
+{% endif %}

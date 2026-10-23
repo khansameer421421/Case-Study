@@ -1,0 +1,275 @@
+{
+  "coverage_gaps": [
+    "i-0a1b2c3d4e5f60009",
+    "i-0a1b2c3d4e5f60010"
+  ],
+  "findings": [
+    {
+      "account_id": "222222222222",
+      "account_name": "acquired-co-a-prod",
+      "avail_gb": 1.72,
+      "device": "/dev/nvme0n1p1",
+      "fstype": "xfs",
+      "host": "i-0a1b2c3d4e5f60001",
+      "inode_used_pct": 31.0,
+      "mount": "/",
+      "name": "web-01",
+      "region": "us-east-1",
+      "size_gb": 20.0,
+      "status": "critical",
+      "used_pct": 91.4
+    },
+    {
+      "account_id": "333333333333",
+      "account_name": "acquired-co-b-prod",
+      "avail_gb": 6.15,
+      "device": "/dev/nvme2n1",
+      "fstype": "ext4",
+      "host": "i-0a1b2c3d4e5f60002",
+      "inode_used_pct": 93.1,
+      "mount": "/var/spool/mail",
+      "name": "db-01",
+      "region": "eu-central-1",
+      "size_gb": 10.0,
+      "status": "critical",
+      "used_pct": 38.5
+    },
+    {
+      "account_id": "222222222222",
+      "account_name": "acquired-co-a-prod",
+      "avail_gb": 30.72,
+      "device": "D:",
+      "fstype": "NTFS",
+      "host": "i-0a1b2c3d4e5f60003",
+      "inode_used_pct": 0.0,
+      "mount": "D:",
+      "name": "app-win-01",
+      "region": "us-east-1",
+      "size_gb": 256.0,
+      "status": "warning",
+      "used_pct": 88.0
+    },
+    {
+      "account_id": "222222222222",
+      "account_name": "acquired-co-a-prod",
+      "avail_gb": 8.4,
+      "device": "/dev/nvme1n1",
+      "fstype": "ext4",
+      "host": "i-0a1b2c3d4e5f60001",
+      "inode_used_pct": 12.0,
+      "mount": "/var/log",
+      "name": "web-01",
+      "region": "us-east-1",
+      "size_gb": 50.0,
+      "status": "warning",
+      "used_pct": 83.2
+    }
+  ],
+  "generated_at": "2026-10-23 09:00:00 UTC",
+  "hosts": [
+    {
+      "account_id": "222222222222",
+      "account_name": "acquired-co-a-prod",
+      "collect_error": "",
+      "collect_status": "ok",
+      "collected_at": "2026-10-23T09:00:00Z",
+      "environment": "prod",
+      "filesystems": [
+        {
+          "avail_gb": 1.72,
+          "device": "/dev/nvme0n1p1",
+          "fstype": "xfs",
+          "inode_used_pct": 31.0,
+          "mount": "/",
+          "size_gb": 20.0,
+          "status": "critical",
+          "used_pct": 91.4
+        },
+        {
+          "avail_gb": 0.01,
+          "device": "/dev/nvme0n1p128",
+          "fstype": "vfat",
+          "inode_used_pct": 0.0,
+          "mount": "/boot/efi",
+          "size_gb": 0.01,
+          "status": "ok",
+          "used_pct": 13.0
+        },
+        {
+          "avail_gb": 8.4,
+          "device": "/dev/nvme1n1",
+          "fstype": "ext4",
+          "inode_used_pct": 12.0,
+          "mount": "/var/log",
+          "size_gb": 50.0,
+          "status": "warning",
+          "used_pct": 83.2
+        }
+      ],
+      "host": "i-0a1b2c3d4e5f60001",
+      "instance_id": "i-0a1b2c3d4e5f60001",
+      "max_used_pct": 91.4,
+      "name": "web-01",
+      "os": "Amazon 2023",
+      "region": "us-east-1",
+      "status": "critical"
+    },
+    {
+      "account_id": "333333333333",
+      "account_name": "acquired-co-b-prod",
+      "collect_error": "",
+      "collect_status": "ok",
+      "collected_at": "2026-10-23T09:00:00Z",
+      "environment": "prod",
+      "filesystems": [
+        {
+          "avail_gb": 17.49,
+          "device": "/dev/nvme0n1p1",
+          "fstype": "ext4",
+          "inode_used_pct": 22.0,
+          "mount": "/",
+          "size_gb": 30.0,
+          "status": "ok",
+          "used_pct": 41.7
+        },
+        {
+          "avail_gb": 180.0,
+          "device": "/dev/nvme1n1",
+          "fstype": "xfs",
+          "inode_used_pct": 3.0,
+          "mount": "/data",
+          "size_gb": 500.0,
+          "status": "ok",
+          "used_pct": 64.0
+        },
+        {
+          "avail_gb": 6.15,
+          "device": "/dev/nvme2n1",
+          "fstype": "ext4",
+          "inode_used_pct": 93.1,
+          "mount": "/var/spool/mail",
+          "size_gb": 10.0,
+          "status": "critical",
+          "used_pct": 38.5
+        }
+      ],
+      "host": "i-0a1b2c3d4e5f60002",
+      "instance_id": "i-0a1b2c3d4e5f60002",
+      "max_used_pct": 64.0,
+      "name": "db-01",
+      "os": "Ubuntu 24.04",
+      "region": "eu-central-1",
+      "status": "critical"
+    },
+    {
+      "account_id": "444444444444",
+      "account_name": "corp-shared-services",
+      "collect_error": "",
+      "collect_status": "ok",
+      "collected_at": "2026-10-23T09:00:00Z",
+      "environment": "dev",
+      "filesystems": [
+        {
+          "avail_gb": 18.0,
+          "device": "/dev/xvda2",
+          "fstype": "xfs",
+          "inode_used_pct": 8.0,
+          "mount": "/",
+          "size_gb": 40.0,
+          "status": "ok",
+          "used_pct": 55.0
+        }
+      ],
+      "host": "i-0a1b2c3d4e5f60004",
+      "instance_id": "i-0a1b2c3d4e5f60004",
+      "max_used_pct": 55.0,
+      "name": "batch-02",
+      "os": "RedHat 9.4",
+      "region": "us-west-2",
+      "status": "ok"
+    },
+    {
+      "account_id": "222222222222",
+      "account_name": "acquired-co-a-prod",
+      "collect_error": "",
+      "collect_status": "ok",
+      "collected_at": "2026-10-23T09:00:00Z",
+      "environment": "prod",
+      "filesystems": [
+        {
+          "avail_gb": 35.84,
+          "device": "C:",
+          "fstype": "NTFS",
+          "inode_used_pct": 0.0,
+          "mount": "C:",
+          "size_gb": 128.0,
+          "status": "ok",
+          "used_pct": 72.0
+        },
+        {
+          "avail_gb": 30.72,
+          "device": "D:",
+          "fstype": "NTFS",
+          "inode_used_pct": 0.0,
+          "mount": "D:",
+          "size_gb": 256.0,
+          "status": "warning",
+          "used_pct": 88.0
+        }
+      ],
+      "host": "i-0a1b2c3d4e5f60003",
+      "instance_id": "i-0a1b2c3d4e5f60003",
+      "max_used_pct": 88.0,
+      "name": "app-win-01",
+      "os": "Microsoft Windows Server 2022 Datacenter",
+      "region": "us-east-1",
+      "status": "warning"
+    },
+    {
+      "account_id": "333333333333",
+      "account_name": "acquired-co-b-prod",
+      "collect_error": "timed out waiting for ping module test: SSM session could not be started (TargetNotConnected)",
+      "collect_status": "unreachable",
+      "collected_at": "2026-10-23T09:00:00Z",
+      "environment": "untagged",
+      "filesystems": [],
+      "host": "i-0a1b2c3d4e5f60009",
+      "instance_id": "i-0a1b2c3d4e5f60009",
+      "max_used_pct": null,
+      "name": "legacy-ftp",
+      "region": "eu-central-1",
+      "status": "unknown"
+    },
+    {
+      "account_id": "444444444444",
+      "account_name": "corp-shared-services",
+      "collect_error": "host dropped from play before collection",
+      "collect_status": "unreachable",
+      "collected_at": "",
+      "environment": "untagged",
+      "filesystems": [],
+      "host": "i-0a1b2c3d4e5f60010",
+      "instance_id": "",
+      "max_used_pct": null,
+      "name": "i-0a1b2c3d4e5f60010",
+      "os": "",
+      "region": "us-west-2",
+      "status": "unknown"
+    }
+  ],
+  "stats": {
+    "accounts": 3,
+    "critical": 2,
+    "filesystems": 9,
+    "hosts_gap": 2,
+    "hosts_reporting": 4,
+    "hosts_total": 6,
+    "warning": 2
+  },
+  "thresholds": {
+    "disk_critical_pct": 90,
+    "disk_warning_pct": 80,
+    "inode_critical_pct": 90,
+    "inode_warning_pct": 80
+  }
+}

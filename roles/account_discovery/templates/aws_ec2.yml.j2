@@ -1,0 +1,50 @@
+---
+# {{ ansible_managed }}
+# Account: {{ account.name }} ({{ account.id }})
+# Regenerate with: ansible-playbook playbooks/generate_inventory.yml
+plugin: amazon.aws.aws_ec2
+profile: {{ aws_profile_prefix }}-{{ account.id }}
+regions:
+{% for r in account.regions %}
+  - {{ r }}
+{% endfor %}
+
+# Every running VM is enrolled by default; owners opt out with the tag
+# DiskMonitoring=disabled rather than having to remember to opt in.
+filters:
+  instance-state-name: running
+exclude_filters:
+  - tag:DiskMonitoring:
+      - disabled
+
+# Instance IDs are the SSM target, so use them as inventory hostnames.
+hostnames:
+  - instance-id
+
+compose:
+  ansible_host: instance_id
+  ansible_connection: "'community.aws.aws_ssm'"
+  ansible_aws_ssm_profile: "'{{ aws_profile_prefix }}-{{ account.id }}'"
+  ansible_aws_ssm_region: placement.region
+  ansible_aws_ssm_bucket_name: "'{{ ssm_transfer_bucket }}'"
+  ansible_shell_type: "'powershell' if (platform | default('')) == 'windows' else 'sh'"
+  aws_profile: "'{{ aws_profile_prefix }}-{{ account.id }}'"
+  aws_account_id: owner_id
+  aws_account_name: "'{{ account.name }}'"
+  aws_region: placement.region
+
+groups:
+  windows: (platform | default('')) == 'windows'
+  linux: (platform | default('')) != 'windows'
+  # Without an instance profile neither SSM nor the CloudWatch agent works.
+  no_instance_profile: iam_instance_profile is not defined
+
+keyed_groups:
+  - key: owner_id
+    prefix: account
+  - key: placement.region
+    prefix: region
+  - key: tags.Environment | default('untagged')
+    prefix: env
+  - key: tags.DiskMonitoringTier | default('standard')
+    prefix: tier

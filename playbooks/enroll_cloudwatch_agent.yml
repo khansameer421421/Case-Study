@@ -1,0 +1,16 @@
+---
+# Enrollment for continuous (60 s) metrics: install + configure the CloudWatch
+# agent on every discovered VM. Idempotent, so it is safe to schedule; new VMs
+# are enrolled on the next run after they appear in inventory.
+#
+#   ansible-playbook playbooks/enroll_cloudwatch_agent.yml
+#   ansible-playbook playbooks/enroll_cloudwatch_agent.yml -e target=tier_critical
+
+- name: Enroll VMs in CloudWatch disk metrics
+  hosts: "{{ target | default('all') }}:!no_instance_profile"
+  gather_facts: true
+  # Roll out in waves; stop if a wave goes badly wrong.
+  serial: "{{ enroll_batch | default('20%') }}"
+  max_fail_percentage: 30
+  roles:
+    - cloudwatch_agent

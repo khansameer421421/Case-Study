@@ -1,0 +1,37 @@
+---
+# Which AWS accounts and regions are in scope.
+#
+#   organizations  - list every ACTIVE account in AWS Organizations (default).
+#                    New acquisitions are picked up automatically as soon as
+#                    they join the org and the StackSet has deployed the role.
+#   static         - use static_accounts below (useful before an acquired
+#                    company's accounts have been migrated into the org).
+account_discovery_mode: organizations
+
+# Profile allowed to call organizations:ListAccounts. Leave empty to use the
+# controller's own credentials (monitoring account registered as a delegated
+# administrator for AWS Organizations - see docs/DESIGN.md).
+org_reader_profile: ""
+
+# Regions scanned in every account unless overridden below.
+default_regions:
+  - us-east-1
+  - us-west-2
+  - eu-west-1
+
+# Accounts never scanned (e.g. management account, log archive, sandboxes).
+excluded_account_ids:
+  - "000000000000"
+
+# Per-account tweaks.
+account_overrides:
+  "333333333333":
+    regions: [eu-central-1]
+
+# Only used when account_discovery_mode == static, or merged in as extra
+# accounts that live outside the organization.
+static_accounts:
+  - id: "222222222222"
+    name: acquired-co-a-prod
+  - id: "333333333333"
+    name: acquired-co-b-prod

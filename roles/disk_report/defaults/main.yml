@@ -1,0 +1,11 @@
+---
+# Host pattern whose results are aggregated (same pattern as the collect play).
+disk_report_target: all
+report_dir: "{{ playbook_dir }}/../reports"
+report_publish_s3: false
+report_s3_bucket: ""
+report_s3_prefix: reports
+report_s3_region: "{{ monitoring_region | default('us-east-1') }}"
+alert_via_sns: false
+alert_sns_topic_arn: ""
+report_fail_on_critical: false
